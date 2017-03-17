@@ -9,6 +9,15 @@ import java.util.regex.Pattern;
 
 public class LogFilter {
 
+    public static boolean isInteresting(LogEntry e, List<String> filter) {
+        for (String s : filter) {
+            if (e.message.startsWith(s) || e.severity.startsWith("ERR")) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public List<LogEntry> filter(List<LogEntry> list, List<String> filter) {
         List<LogEntry> filteredList = new ArrayList<LogEntry>();
         for (LogEntry e : list) {

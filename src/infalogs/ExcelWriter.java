@@ -25,10 +25,14 @@ public class ExcelWriter {
         try {
             DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
             String pvm = df.format(new Date());
-            WritableWorkbook workbook = Workbook.createWorkbook(new File(path + "\\report_" + pvm + ".xls"));
-            WritableSheet sheet = workbook.createSheet("Report " + pvm, 0);
+            //WritableWorkbook workbook = Workbook.createWorkbook(new File(path + "\\report_" + pvm + ".xls"));
+            WritableWorkbook workbook = Workbook.createWorkbook(new File(path + "\\raportti.xls"));
+            WritableSheet sheet = workbook.createSheet("Raportti " + pvm, 0);
+            WritableSheet errorSheet = workbook.createSheet("Virheet",1);
             sheet.setColumnView(0, 20);
             sheet.setColumnView(1, 160);
+            errorSheet.setColumnView(0, 20);
+            errorSheet.setColumnView(1, 160);
             //sheet.setColumnView(2, 120);
             WritableCellFormat wrappedText = new WritableCellFormat(WritableWorkbook.ARIAL_10_PT);
             wrappedText.setBackground(Colour.VERY_LIGHT_YELLOW);
@@ -100,6 +104,56 @@ public class ExcelWriter {
                 Label labelEmptyrow = new Label(0, i++, "");
                 sheet.addCell(labelEmptyrow);
             }
+                        
+            // write errors to another tab
+            int j = 0;
+            for (InfaLogs log : logs) {
+                if (log.isErrors()) {                    
+                    boolean once = true;
+                    for (LogEntry entry : log.getStats()) {
+                        if (once) {
+                            Label label = new Label(0, j, entry.date);
+                            errorSheet.addCell(label);
+                            once = false;
+                        }
+                        if (entry.toString().startsWith("Table:")) {
+                            Label label = new Label(1, j++, entry.toString(), wrappedText);
+                            errorSheet.addCell(label);
+                        } else {
+                            Label label = new Label(1, j++, entry.toString());
+                            errorSheet.addCell(label);
+                        }
+                    }
+
+                    Map<String, Integer> errorCounts = log.getErrors();
+                    Label label = new Label(1, j++, "Workflow errors:");
+                    errorSheet.addCell(label);
+
+                    Iterator<Map.Entry<String, Integer>> iter = errorCounts.entrySet().iterator();
+
+                    while (iter.hasNext()) {
+                        Map.Entry<String, Integer> entry = iter.next();
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("'");
+                        sb.append(entry.getKey());
+                        if (((String) entry.getKey()).length() == InfaLogs.INFALOG_MAX_LEN) {
+                            sb.append(" ...'");
+                        } else {
+                            sb.append(" '");
+                        }
+                        sb.append(" ");
+                        sb.append(entry.getValue());
+                        sb.append(" pcs");
+
+                        Label labelErr = new Label(1, j++, sb.toString(), errorText);
+                        errorSheet.addCell(labelErr);
+
+                        Label labelEmptyrow = new Label(0, j++, "");
+                        errorSheet.addCell(labelEmptyrow);
+                    }
+                }
+            }          
+            
             workbook.write();
             workbook.close();
         } catch (WriteException ex) {
